@@ -93,6 +93,17 @@ Examples:
 /raffle draw
 ```
 
+### /mining
+Save and test mining loadouts against rock mass/resistance.
+- `save name:<text> vehicle_id:<id> config:<laserId:moduleId,moduleId;...>` – Saves a mining loadout (validates vehicle size, laser slots, module existence).
+- `calc rock_mass:<int> resistance_pct:<decimal> [loadout_id] [vehicle_id] [config]` – Calculates crackability using saved loadout or ad-hoc config. Formula: max_mass = (total_power * 6) - (total_power * 5.7 * resistance_pct).
+Examples:
+```
+/mining save name:"Mole Power" vehicle_id:1 config:"1:10,11;1:10,11;1:10,11"
+/mining calc rock_mass:8000 resistance_pct:0.25 loadout_id:3
+/mining calc rock_mass:5000 resistance_pct:0.15 vehicle_id:1 config:"1:10,11;1:10,11;1:10"
+```
+
 ### /help and /commandhelp
 - `/help` – Lists all commands with examples.
 - `/commandhelp command:<name>` – Detailed options/subcommands for one command.
