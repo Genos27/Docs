@@ -1,10 +1,10 @@
 # IcarusBot
 
-Discord bot for Star Citizen org operations: attendance, activity tracking, mission logging, loot raffles, and aUEC splitting with org tax.
+Discord bot for Star Citizen org operations: attendance, activity tracking, mission logging, loot raffles, crewed event signups, and aUEC splitting with org tax.
 
 ## Setup
 - Node 18+
-- Copy `.env.example` → `.env` and set `TOKEN`, `CLIENT_ID`, `GUILD_ID`.
+- Copy `.env.example` to `.env` and set `TOKEN`, `CLIENT_ID`, `GUILD_ID`.
 - Install: `npm install`
 - Deploy commands: `node deploy-commands.js`
 - Run: `node index.js`
@@ -41,9 +41,9 @@ List all events for this guild.
 
 ### /activity
 Guild-scoped rollups from voice/message activity.
-- `summary [start_date] [end_date] [limit] [page] [voice_weight] [message_weight]` – Combined leaderboard with weighted score (default 1:1), paginated.
-- `user user:@User [start_date] [end_date]` – Voice total, top channels, messages.
-- `channel channel:#ch [start_date] [end_date] [limit]` – Top users in a channel.
+- `summary [start_date] [end_date] [limit] [page] [voice_weight] [message_weight]`: Combined leaderboard with weighted score (default 1:1), paginated.
+- `user user:@User [start_date] [end_date]`: Voice total, top channels, messages.
+- `channel channel:#ch [start_date] [end_date] [limit]`: Top users in a channel.
 Examples:
 ```
 /activity summary start_date:2025-12-01 end_date:2025-12-07 page:1 limit:10 voice_weight:1 message_weight:0.5
@@ -53,8 +53,8 @@ Examples:
 
 ### /inactivity
 Uses guild rollups only.
-- `list [days] [role]` – Show members with no activity since cutoff.
-- `warn [days] [role] [dry_run] [message]` – DM inactive users; `dry_run:true` previews targets.
+- `list [days] [role]`: Show members with no activity since cutoff.
+- `warn [days] [role] [dry_run] [message]`: DM inactive users; `dry_run:true` previews targets.
 Examples:
 ```
 /inactivity list days:14 role:@Member
@@ -63,10 +63,10 @@ Examples:
 
 ### /mission
 Mission night logging (guild-scoped).
-- `start name:<text> [notes]` – Begin a mission night.
-- `add [mission_id] user:@User amount:<aUEC> [notes]` – Record contribution; defaults to latest open mission.
-- `close [mission_id]` – Close mission and total contributions.
-- `report [mission_id]` – Show totals with org tax (10%) and per-user payout; records payout recipients.
+- `start name:<text> [notes]`: Begin a mission night.
+- `add [mission_id] user:@User amount:<aUEC> [notes]`: Record contribution; defaults to latest open mission.
+- `close [mission_id]`: Close mission and total contributions.
+- `report [mission_id]`: Show totals with org tax (10%) and per-user payout; records payout recipients.
 Examples:
 ```
 /mission start name:"Org Mission Night" notes:"Salvage run"
@@ -83,9 +83,9 @@ Splits a total with 10% org tax, even split remainder.
 
 ### /raffle
 Loot raffle using recent attendance (guild-scoped, deterministic seed).
-- `create name:<text> [window_days] [seed]` – Builds weighted entries (voice minutes + messages) over the window (default 7d).
-- `entries [raffle_id]` – Show entries for latest or specified raffle.
-- `draw [raffle_id]` – Deterministic weighted winner based on stored seed.
+- `create name:<text> [window_days] [seed]`: Builds weighted entries (voice minutes + messages) over the window (default 7d).
+- `entries [raffle_id]`: Show entries for latest or specified raffle.
+- `draw [raffle_id]`: Deterministic weighted winner based on stored seed.
 Examples:
 ```
 /raffle create name:"Loot Raffle" window_days:7 seed:"ops-2025-12-01"
@@ -93,10 +93,23 @@ Examples:
 /raffle draw
 ```
 
+### /eventpost
+Create an event signup post with dynamic role buttons. Accepts a JSON array or space/comma separated role keys from `role_definitions`.
+```
+/eventpost title:"Org Op" time:"20:00 CST" roles:'[{"key":"pilot","label":"Pilot","emoji":"🛩️"},{"key":"gunner","label":"Gunner","emoji":"🔫"},{"key":"medic","label":"Medic","emoji":"⛑️"}]' details:"Briefing 15 min early."
+/eventpost title:"Org Op" time:"20:00 CST" roles:"pilot gunner engineer" details:"Briefing 15 min early."
+```
+
+### /eventship
+Create a signup post based on a ship’s configured role capacities (from `ship_roles`). Buttons enforce capacity limits per role.
+```
+/eventship ship:"C2 Hercules" time:"20:00 CST" details:"Cargo op"
+```
+
 ### /mining
 Save and test mining loadouts against rock mass/resistance.
-- `save name:<text> vehicle_id:<id> config:<laserId:moduleId,moduleId;...>` – Saves a mining loadout (validates vehicle size, laser slots, module existence).
-- `calc rock_mass:<int> resistance_pct:<decimal> [loadout_id] [vehicle_id] [config]` – Calculates crackability using saved loadout or ad-hoc config.
+- `save name:<text> vehicle_id:<id> config:<laserId:moduleId,moduleId;...>`: Saves a mining loadout (validates vehicle size, laser slots, module existence).
+- `calc rock_mass:<int> resistance_pct:<decimal> [loadout_id] [vehicle_id] [config]`: Calculates crackability using saved loadout or ad-hoc config.
 Examples:
 ```
 /mining save name:"Mole Power" vehicle_id:1 config:"1:10,11;1:10,11;1:10,11"
@@ -105,8 +118,8 @@ Examples:
 ```
 
 ### /help and /commandhelp
-- `/help` – Lists all commands with examples.
-- `/commandhelp command:<name>` – Detailed options/subcommands for one command.
+- `/help`: Lists all commands with examples.
+- `/commandhelp command:<name>`: Detailed options/subcommands for one command.
 
 ## Event & Activity Behavior
 - Voice joins/leaves are logged and rolled up per day/channel.
@@ -115,14 +128,16 @@ Examples:
 - All stats/commands are guild-scoped; legacy rows without `guild_id` are still readable but new data is scoped.
 
 ## Data Tables (SQLite)
-- `voice_sessions` – raw joins/leaves
-- `voice_activity_daily` – per-user/channel/day seconds
-- `message_counts` – per-user/channel/day count
-- `events` – scheduled events (guild_id)
-- `event_attendance` – per-event occurrence attendance
-- `mission_nights`, `mission_participants` – mission logging (guild_id)
-- `payouts`, `payout_recipients` – splits/logs (guild_id)
-- `raffles`, `raffle_entries` – weighted raffle tracking (guild_id)
+- `voice_sessions`: raw joins/leaves
+- `voice_activity_daily`: per-user/channel/day seconds
+- `message_counts`: per-user/channel/day count
+- `events`: scheduled events (guild_id)
+- `event_attendance`: per-event occurrence attendance
+- `mission_nights`, `mission_participants`: mission logging (guild_id)
+- `payouts`, `payout_recipients`: splits/logs (guild_id)
+- `raffles`, `raffle_entries`: weighted raffle tracking (guild_id)
+- `ship_roles`: per-ship role capacities
+- `role_definitions`: role metadata used by signup posts
 
 ## Deployment
 - Update slash commands after changes: `node deploy-commands.js`
