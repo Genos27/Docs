@@ -75,6 +75,12 @@ Examples:
 /mission report
 ```
 
+### /payoutstatus
+List mission nights where recorded participants are still unpaid.
+```
+/payoutstatus
+```
+
 ### /split
 Splits a total with 10% org tax, even split remainder.
 ```
@@ -101,9 +107,18 @@ Create an event signup post with dynamic role buttons. Accepts a JSON array or s
 ```
 
 ### /eventship
-Create a signup post based on a ship’s configured role capacities (from `ship_roles`). Buttons enforce capacity limits per role.
+Create a signup post based on a ship's configured role capacities (from `ship_roles`). Buttons enforce capacity limits per role.
 ```
 /eventship ship:"C2 Hercules" time:"20:00 CST" details:"Cargo op"
+```
+
+### /shiploadout
+Save, view, list, or delete ship loadouts from erkul short URLs (per user, name must be unique).
+```
+/shiploadout save name:"Touring Carrack" url:"https://www.erkul.games/loadout/jmbIPMVt" notes:"Touring fit"
+/shiploadout view name:"Touring Carrack"
+/shiploadout list
+/shiploadout delete name:"Touring Carrack"
 ```
 
 ### /mining
@@ -118,8 +133,8 @@ Examples:
 ```
 
 ### /help and /commandhelp
-- `/help`: Lists all commands with examples.
-- `/commandhelp command:<name>`: Detailed options/subcommands for one command.
+- `/help [page]`: Lists commands with short descriptions (paged). Use `/commandhelp` for details.
+- `/commandhelp command:<name>`: Detailed options/subcommands/examples for one command.
 
 ## Event & Activity Behavior
 - Voice joins/leaves are logged and rolled up per day/channel.
@@ -138,6 +153,7 @@ Examples:
 - `raffles`, `raffle_entries`: weighted raffle tracking (guild_id)
 - `ship_roles`: per-ship role capacities
 - `role_definitions`: role metadata used by signup posts
+- `ship_loadouts` and related component tables for imported loadouts
 
 ## Deployment
 - Update slash commands after changes: `node deploy-commands.js`
