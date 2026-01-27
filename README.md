@@ -4,7 +4,7 @@ Discord bot for Star Citizen org operations: attendance, activity tracking, miss
 
 ## Setup
 - Node 18+
-- Copy `.env.example` to `.env` and set `TOKEN`, `CLIENT_ID`, `GUILD_ID`.
+- Create `.env` and set `TOKEN`, `CLIENT_ID`, `GUILD_ID`.
 - Install: `npm install`
 - Deploy commands: `node deploy-commands.js`
 - Run: `node index.js`
@@ -15,53 +15,88 @@ Discord bot for Star Citizen org operations: attendance, activity tracking, miss
 - Minimum bot perms: View Channels, Send Messages, Embed Links, Read Message History
 
 ## Command Reference (slash)
-### /attendance
-- `event date:<YYYY-MM-DD>`: Show attendance for that date’s event (guild-scoped). Uses rollups; 10+ min threshold noted.
+
+### /eventsquad
+Create a squad signup with fixed roles (Squad Lead, Medic) and a variable soldier count.
+```
+/eventsquad title:"Fireteam Alpha" soldiers:2 details:"Rally on Discord VC"
+/eventsquad title:"Fireteam Alpha" soldiers:2 event_id:123   # use event thread anchors; Flex signup is added automatically
+```
+### /iattendance
+- `event date:<YYYY-MM-DD>`: Show attendance for that date's event (guild-scoped). Uses rollups; 10+ min threshold noted.
 - `user user:@User [start_date] [end_date]`: Voice time, top channels, messages, and event attendance.
 - `summary [start_date] [end_date]`: Event-level totals/averages from rollups.
 Examples:
 ```
-/attendance event date:2025-12-05
-/attendance user user:@Pilot start_date:2025-12-01 end_date:2025-12-07
-/attendance summary start_date:2025-12-01 end_date:2025-12-07
+/iattendance event date:2025-12-05
+/iattendance user user:@Pilot start_date:2025-12-01 end_date:2025-12-07
+/iattendance summary start_date:2025-12-01 end_date:2025-12-07
 ```
 
-### /addevent
-Add events to the guild.
+### /iaddevent
+Add events to the guild database (no immediate post).
 ```
-/addevent name:"Free Fly Night" start_time:19:00 end_time:00:00 recurrence:weekly day_of_week:Tuesday
-/addevent name:"Special Op" start_time:20:00 end_time:23:00 recurrence:none date:2025-12-15
+/iaddevent title:"Free Fly Night" start:"2025-12-16T19:00:00" duration:5 recurrence:weekly topic:"Org Op"
+/iaddevent title:"Special Op" start:"2025-12-15T20:00:00" duration:3 recurrence:none topic:"Org Op"
 ```
 
-### /listevents
+### /ilistevents
 List all events for this guild.
 ```
-/listevents
+/ilistevents
 ```
 
-### /activity
+### /iactivity
 Guild-scoped rollups from voice/message activity.
-- `summary [start_date] [end_date] [limit] [page] [voice_weight] [message_weight]`: Combined leaderboard with weighted score (default 1:1), paginated.
+- `summary [start_date] [end_date] [limit] [page] [voice_weight] [message_weight] [file]`: Combined leaderboard with weighted score (default voice_weight=1, message_weight=5), paginated. Default limit is 100.
 - `user user:@User [start_date] [end_date]`: Voice total, top channels, messages.
 - `channel channel:#ch [start_date] [end_date] [limit]`: Top users in a channel.
 Examples:
 ```
-/activity summary start_date:2025-12-01 end_date:2025-12-07 page:1 limit:10 voice_weight:1 message_weight:0.5
-/activity user user:@Pilot start_date:2025-12-01 end_date:2025-12-07
-/activity channel channel:#ops start_date:2025-12-01 end_date:2025-12-07
+/iactivity summary start_date:2025-12-01 end_date:2025-12-07 page:1 limit:10 voice_weight:1 message_weight:0.5
+/iactivity user user:@Pilot start_date:2025-12-01 end_date:2025-12-07
+/iactivity channel channel:#ops start_date:2025-12-01 end_date:2025-12-07
 ```
 
-### /inactivity
+### /iautopost
+Manually run the daily event autopost for this server (next 14 days).
+```
+/iautopost
+```
+
+### /icommendation
+Manage commendations.
+- `add user:<name|id> role:<text> reason:<text>`: Add a commendation.
+- `view`: Show commendations from the past 30 days.
+Examples:
+```
+/icommendation add user:"Pilot" role:"Medic" reason:"Great triage under fire"
+/icommendation view
+```
+
+### /ieventconfigure
+Configure event autoposting and target channel.
+```
+/ieventconfigure channel:#ops autopost:true timezone:CST
+```
+
+### /ieventcreate
+Create a recurring event and post an embed immediately.
+```
+/ieventcreate title:"Org Op" start:"2025-12-19T19:00:00" duration:2 recurrence:weekly topic:"Org Op" activity:"TBD"
+```
+
+### /iinactivity
 Uses guild rollups only.
 - `list [days] [role]`: Show members with no activity since cutoff.
 - `warn [days] [role] [dry_run] [message]`: DM inactive users; `dry_run:true` previews targets.
 Examples:
 ```
-/inactivity list days:14 role:@Member
-/inactivity warn days:30 role:@Member dry_run:true message:"Please check in with the org!"
+/iinactivity list days:14 role:@Member
+/iinactivity warn days:30 role:@Member dry_run:true message:"Please check in with the org!"
 ```
 
-### /mission
+### /imission
 Mission night logging (guild-scoped).
 - `start name:<text> [notes]`: Begin a mission night.
 - `add [mission_id] user:@User amount:<aUEC> [notes]`: Record contribution; defaults to latest open mission.
@@ -69,72 +104,107 @@ Mission night logging (guild-scoped).
 - `report [mission_id]`: Show totals with org tax (10%) and per-user payout; records payout recipients.
 Examples:
 ```
-/mission start name:"Org Mission Night" notes:"Salvage run"
-/mission add user:@Pilot amount:500000
-/mission close
-/mission report
+/imission start name:"Org Mission Night" notes:"Salvage run"
+/imission add user:@Pilot amount:500000
+/imission close
+/imission report
 ```
 
-### /payoutstatus
+### /ipayoutstatus
 List mission nights where recorded participants are still unpaid.
 ```
-/payoutstatus
+/ipayoutstatus
 ```
 
-### /split
-Splits a total with 10% org tax, even split remainder.
+### /isplit
+Splits a total with 10% org tax, minus sender fees (5% per outgoing transfer). Any remainder goes to org tax.
 ```
-/split total:1000000 participants:5
+/isplit total:1000000 participants:5
 ```
 
-### /raffle
+### /iraffle
 Loot raffle using recent attendance (guild-scoped, deterministic seed).
 - `create name:<text> [window_days] [seed]`: Builds weighted entries (voice minutes + messages) over the window (default 7d).
 - `entries [raffle_id]`: Show entries for latest or specified raffle.
 - `draw [raffle_id]`: Deterministic weighted winner based on stored seed.
 Examples:
 ```
-/raffle create name:"Loot Raffle" window_days:7 seed:"ops-2025-12-01"
-/raffle entries
-/raffle draw
+/iraffle create name:"Loot Raffle" window_days:7 seed:"ops-2025-12-01"
+/iraffle entries
+/iraffle draw
 ```
 
-### /eventpost
+### /ieventoneoff
 Create an event signup post with dynamic role buttons. Accepts a JSON array or space/comma separated role keys from `role_definitions`.
 ```
-/eventpost title:"Org Op" time:"20:00 CST" roles:'[{"key":"pilot","label":"Pilot","emoji":"🛩️"},{"key":"gunner","label":"Gunner","emoji":"🔫"},{"key":"medic","label":"Medic","emoji":"⛑️"}]' details:"Briefing 15 min early."
-/eventpost title:"Org Op" time:"20:00 CST" roles:"pilot gunner engineer" details:"Briefing 15 min early."
+/ieventoneoff title:"Org Op" time:"20:00 CST" roles:'[{"key":"pilot","label":"Pilot","emoji":"🛩️"},{"key":"gunner","label":"Gunner","emoji":"🔫"},{"key":"medic","label":"Medic","emoji":"⛑️"}]' details:"Briefing 15 min early."
+/ieventoneoff title:"Org Op" time:"20:00 CST" roles:"pilot gunner engineer" details:"Briefing 15 min early."
 ```
 
-### /eventship
+### /ieventupdate
+Update an event instance (title, activity, or details).
+```
+/ieventupdate event_id:123 title:"Updated Title" activity:"New activity"
+```
+
+### /ieventship
 Create a signup post based on a ship's configured role capacities (from `ship_roles`). Buttons enforce capacity limits per role.
 ```
-/eventship ship:"C2 Hercules" time:"20:00 CST" details:"Cargo op"
+/ieventship ship:"C2 Hercules" time:"20:00 CST" details:"Cargo op"
+/ieventship ship:"Idris" event_id:123   # place signup in the event thread; Flex signup added automatically
 ```
 
-### /shiploadout
+### /ishipid
+Find ships by name fragment and show their configured event crew slots (IDs feed into `/ishiproleupdate`).
+```
+/ishipid name:Idris
+```
+
+### /ishiproleupdate
+Update the crew slot counts for a ship by ID (only updates provided roles; pilot defaults to 1).
+```
+/ishiproleupdate ship_id:44 engineer:2 gunner:3
+```
+
+### /ishiploadout
 Save, view, list, or delete ship loadouts from erkul short URLs (per user, name must be unique).
 ```
-/shiploadout save name:"Touring Carrack" url:"https://www.erkul.games/loadout/jmbIPMVt" notes:"Touring fit"
-/shiploadout view name:"Touring Carrack"
-/shiploadout list
-/shiploadout delete name:"Touring Carrack"
+/ishiploadout save name:"Touring Carrack" url:"https://www.erkul.games/loadout/jmbIPMVt" notes:"Touring fit"
+/ishiploadout view name:"Touring Carrack"
+/ishiploadout list
+/ishiploadout delete name:"Touring Carrack"
 ```
 
-### /mining
+### /imining
 Save and test mining loadouts against rock mass/resistance.
 - `save name:<text> vehicle_id:<id> config:<laserId:moduleId,moduleId;...>`: Saves a mining loadout (validates vehicle size, laser slots, module existence).
 - `calc rock_mass:<int> resistance_pct:<decimal> [loadout_id] [vehicle_id] [config]`: Calculates crackability using saved loadout or ad-hoc config.
 Examples:
 ```
-/mining save name:"Mole Power" vehicle_id:1 config:"1:10,11;1:10,11;1:10,11"
-/mining calc rock_mass:8000 resistance_pct:0.25 loadout_id:3
-/mining calc rock_mass:5000 resistance_pct:0.15 vehicle_id:1 config:"1:10,11;1:10,11;1:10"
+/imining save name:"Mole Power" vehicle_id:1 config:"1:10,11;1:10,11;1:10,11"
+/imining calc rock_mass:8000 resistance_pct:0.25 loadout_id:3
+/imining calc rock_mass:5000 resistance_pct:0.15 vehicle_id:1 config:"1:10,11;1:10,11;1:10"
 ```
 
-### /help and /commandhelp
-- `/help [page]`: Lists commands with short descriptions (paged). Use `/commandhelp` for details.
-- `/commandhelp command:<name>`: Detailed options/subcommands/examples for one command.
+### /ipermissionsreport
+Export server role + channel permission overrides as JSON.
+```
+/ipermissionsreport mode:summary include_managed_roles:false
+```
+
+### /ipoll
+Create and manage polls.
+- `create question:<text> options:<opt1;opt2;...> [type] [anonymous] [hide_results] [show_percentages] [max_choices] [start_in_minutes] [duration_minutes] [allowed_roles] [allowed_channels] [change_lock_minutes] [description]`
+- `close [poll_id] [message_id]`
+Examples:
+```
+/ipoll create question:"Next op?" options:"Salvage;Bounty;Mining" type:single duration_minutes:60 anonymous:true
+/ipoll close poll_id:12
+```
+
+### /ihelp and /icommandhelp
+- `/ihelp`: Lists commands with short descriptions. Use `/icommandhelp` for details.
+- `/icommandhelp cmd:<name>`: Detailed options/subcommands/examples for one command.
 
 ## Event & Activity Behavior
 - Voice joins/leaves are logged and rolled up per day/channel.
