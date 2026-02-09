@@ -49,12 +49,13 @@ List all events for this guild.
 ### /iactivity
 Guild-scoped rollups from voice/message activity.
 - `summary [start_date] [end_date] [limit] [page] [voice_weight] [message_weight] [file]`: Combined leaderboard with weighted score (default voice_weight=1, message_weight=5), paginated. Default limit is 100.
-- `user user:@User [start_date] [end_date]`: Voice total, top channels, messages.
+- `user user:@User [start_date] [end_date] [detailed]`: Voice total, top channels, messages. Set `detailed:true` to list each voice session.
 - `channel channel:#ch [start_date] [end_date] [limit]`: Top users in a channel.
 Examples:
 ```
 /iactivity summary start_date:2025-12-01 end_date:2025-12-07 page:1 limit:10 voice_weight:1 message_weight:0.5
 /iactivity user user:@Pilot start_date:2025-12-01 end_date:2025-12-07
+/iactivity user user:@Pilot start_date:2025-12-01 end_date:2025-12-07 detailed:true
 /iactivity channel channel:#ops start_date:2025-12-01 end_date:2025-12-07
 ```
 
@@ -202,6 +203,15 @@ Examples:
 /ipoll close poll_id:12
 ```
 
+### /irecord
+Record a voice channel to per-user WAV files and upload to Google Drive (server managers only).
+```
+/irecord join
+/irecord stop
+/irecord status
+/irecord retry_upload
+```
+
 ### /ihelp and /icommandhelp
 - `/ihelp`: Lists commands with short descriptions. Use `/icommandhelp` for details.
 - `/icommandhelp cmd:<name>`: Detailed options/subcommands/examples for one command.
@@ -229,3 +239,21 @@ Examples:
 - Update slash commands after changes: `node deploy-commands.js`
 - Ensure bot has required intents/permissions in the Discord developer portal.
 - Optional guild backfill for legacy rows (events/mission/payouts/raffles): `npm run migrate:guild` (requires `GUILD_ID` in `.env`).
+
+## Recording Setup (Google Drive)
+Set these in `.env` for `/irecord` uploads:
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_REFRESH_TOKEN`
+- `GOOGLE_DRIVE_FOLDER_ID` (optional parent folder for uploads)
+- `GOOGLE_DRIVE_SHARE_PUBLIC` (set to `true` to share links publicly; leave unset for private links)
+- `RECORDINGS_TMP_DIR` (optional temp folder; default `recordings/tmp`)
+- `RECORDINGS_MAX_HOURS` (auto-stop duration, default 6)
+
+Refresh token notes (OAuth personal account):
+- Create an OAuth client in Google Cloud Console (Desktop app or Web app).
+- Use the OAuth Playground to exchange an auth code for a refresh token.
+- Add the refresh token to `.env` as `GOOGLE_REFRESH_TOKEN`.
+- If upload fails or Drive is not configured, WAVs remain in `recordings/tmp/<sessionId>`.
+- Recording auto-stops after `RECORDINGS_MAX_HOURS` or when the channel is empty of non-bot users.
+- Use `/irecord retry_upload` to retry the most recent upload or provide a `session_id` (the temp folder name).
